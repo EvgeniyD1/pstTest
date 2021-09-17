@@ -1,4 +1,4 @@
-package psttest.demo.controller;
+package psttest.demo.controller.requests;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import io.swagger.annotations.ApiModel;

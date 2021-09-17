@@ -18,6 +18,7 @@ import java.util.Optional;
 public interface UserRepository extends CrudRepository<User, Long>,
                                         JpaRepository<User, Long>{
 
+    @EntityGraph(attributePaths = { "roles", "goods", "messages" })
     Optional<User> findByUsername(String username);
 
     @Modifying
@@ -37,5 +38,8 @@ public interface UserRepository extends CrudRepository<User, Long>,
 
     @EntityGraph(attributePaths = { "roles", "goods", "messages" })
     Page<User> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = { "roles", "goods", "messages" })
+    Optional<User> findById(Long userId);
 
 }

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import psttest.demo.controller.requests.GoodsRequest;
 import psttest.demo.domain.Goods;
 import psttest.demo.service.GoodsService;
 import springfox.documentation.annotations.ApiIgnore;
@@ -75,6 +77,7 @@ public class GoodsController {
             @ApiImplicitParam(name = "id", value = "Goods database id", example = "2" ,required = true,
                     dataType = "long", paramType = "path")
     })
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<Goods> updateGoods(@PathVariable("id") Long goodsId,
                                            @RequestBody GoodsRequest request) {
@@ -90,6 +93,7 @@ public class GoodsController {
             @ApiImplicitParam(name = "id", value = "Good database id", example = "3", required = true,
                     dataType = "long", paramType = "path")
     })
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteGood(@PathVariable("id") Long goodId) {
         return new ResponseEntity<>(goodsService.deleteGoods(goodId), HttpStatus.OK);
@@ -100,6 +104,7 @@ public class GoodsController {
             @ApiResponse(code = 201, message = "Successful creation good"),
             @ApiResponse(code = 500, message = "Server error, something wrong")
     })
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping("/createGoods")
     public ResponseEntity<Goods> create(@RequestBody GoodsRequest request) {
         return new ResponseEntity<>((goodsService.create(request)), HttpStatus.CREATED);

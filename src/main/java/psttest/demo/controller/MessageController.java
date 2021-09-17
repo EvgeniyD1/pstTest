@@ -7,16 +7,21 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import psttest.demo.dao.UserRepository;
+import psttest.demo.controller.requests.MessageRequest;
 import psttest.demo.domain.Message;
+import psttest.demo.domain.User;
 import psttest.demo.service.MessageService;
+import springfox.documentation.annotations.ApiIgnore;
 
 import java.util.List;
 
@@ -25,11 +30,9 @@ import java.util.List;
 public class MessageController {
 
     private final MessageService messageService;
-    private final UserRepository userRepository;
 
-    public MessageController(MessageService messageService, UserRepository userRepository) {
+    public MessageController(MessageService messageService) {
         this.messageService = messageService;
-        this.userRepository = userRepository;
     }
 
     @ApiOperation(value = "Find all Messages")
@@ -43,26 +46,17 @@ public class MessageController {
         return new ResponseEntity<>(messages, HttpStatus.OK);
     }
 
-
-    ////////////////////////////////////////////////////////
-//    @ApiOperation(value = "Create Message")
-//    @ApiResponses({
-//            @ApiResponse(code = 201, message = "Successful creation message"),
-//            @ApiResponse(code = 500, message = "Server error, something wrong")
-//    })
-//    /*костыль пока что*/
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "id", value = "User database id", example = "1", required = true,
-//                    dataType = "long", paramType = "path")
-//    })
-//    @PostMapping("/createMessage/{id}")
-//    public ResponseEntity<Message> create(@PathVariable("id") Long userId, @RequestBody MessageRequest request) {
-//        Message message = new Message();
-//        message.setText(request.getText());
-//        User user = userRepository.findById(userId).orElseThrow();
-//        message.setUser(user);
-//        return new ResponseEntity<>(messageRepository.save(message), HttpStatus.CREATED);
-//    }
+    @ApiOperation(value = "Create Message")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Successful creation message"),
+            @ApiResponse(code = 500, message = "Server error, something wrong")
+    })
+    @PreAuthorize("hasAuthority('USER')")
+    @PostMapping("/createMessage")
+    public ResponseEntity<Message> create(@ApiIgnore @AuthenticationPrincipal User user,
+                                          @RequestBody MessageRequest request) {
+        return new ResponseEntity<>(messageService.create(user, request), HttpStatus.CREATED);
+    }
 
     @ApiOperation(value = "Update message")
     @ApiResponses({
@@ -73,10 +67,18 @@ public class MessageController {
             @ApiImplicitParam(name = "id", value = "message database id", example = "1", required = true,
                     dataType = "long", paramType = "path")
     })
+    @PreAuthorize("hasAuthority('USER')")
     @PutMapping("/{id}")
     public ResponseEntity<Message> updateMessage(@PathVariable("id") Long messageId,
+                                                 @ApiIgnore @AuthenticationPrincipal User user,
                                                  @RequestBody MessageRequest request) {
-        return new ResponseEntity<>(messageService.updateMessage(messageId, request), HttpStatus.OK);
+        Message messageFromDb = messageService.findById(messageId).orElseThrow();
+        if (messageFromDb.getUser().getId().equals(user.getId())){
+            messageFromDb.setText(request.getText());
+            return new ResponseEntity<>(messageService.save(messageFromDb), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(messageFromDb, HttpStatus.FORBIDDEN);
+        }
     }
 
     @ApiOperation(value = "Delete Message")
@@ -88,6 +90,7 @@ public class MessageController {
             @ApiImplicitParam(name = "id", value = "Message database id", example = "1", required = true,
                     dataType = "long", paramType = "path")
     })
+    @PreAuthorize("hasAuthority('USER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteMessage(@PathVariable("id") Long messageId) {
         return new ResponseEntity<>(messageService.deleteMessage(messageId), HttpStatus.OK);
