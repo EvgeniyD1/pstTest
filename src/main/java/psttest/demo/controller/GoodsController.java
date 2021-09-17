@@ -18,18 +18,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import psttest.demo.dao.GoodsRepository;
 import psttest.demo.domain.Goods;
+import psttest.demo.service.GoodsService;
 import springfox.documentation.annotations.ApiIgnore;
 
 @RestController
 @RequestMapping("/goods")
 public class GoodsController {
 
-    private final GoodsRepository goodsRepository;
+    private final GoodsService goodsService;
 
-    public GoodsController(GoodsRepository goodsRepository) {
-        this.goodsRepository = goodsRepository;
+    public GoodsController(GoodsService goodsService) {
+        this.goodsService = goodsService;
     }
 
     @ApiOperation(value = "Find all goods")
@@ -47,8 +47,8 @@ public class GoodsController {
     })
     @GetMapping
     public ResponseEntity<Page<Goods>> findAll(@ApiIgnore Pageable pageable) {
-        Page<Goods> users = goodsRepository.findAll(pageable);
-        return new ResponseEntity<>(users, HttpStatus.OK);
+        Page<Goods> goods = goodsService.findAll(pageable);
+        return new ResponseEntity<>(goods, HttpStatus.OK);
     }
 
     @ApiOperation(value = "Find goods by name")
@@ -57,12 +57,12 @@ public class GoodsController {
             @ApiResponse(code = 500, message = "Server error, something wrong")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "name", value = "Search query - goodName", example = "coca",
+            @ApiImplicitParam(name = "name", value = "Search query - goodName", example = "cola",
                     required = true, dataType = "string", paramType = "query")
     })
     @GetMapping("/searchByGoodsName")
     public ResponseEntity<Goods> findByName(@RequestParam("name") String query) {
-        Goods goods = goodsRepository.findByGoodName(query).orElseThrow();
+        Goods goods = goodsService.findByGoodName(query).orElseThrow();
         return new ResponseEntity<>(goods, HttpStatus.OK);
     }
 
@@ -78,9 +78,7 @@ public class GoodsController {
     @PutMapping("/{id}")
     public ResponseEntity<Goods> updateGoods(@PathVariable("id") Long goodsId,
                                            @RequestBody GoodsRequest request) {
-        Goods goodsFromDb = goodsRepository.findById(goodsId).orElseThrow();
-        goodsFromDb.setGoodName(request.getGoodName());
-        return new ResponseEntity<>(goodsRepository.save(goodsFromDb), HttpStatus.OK);
+        return new ResponseEntity<>(goodsService.updateGoods(goodsId, request), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Delete goods")
@@ -94,10 +92,7 @@ public class GoodsController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteGood(@PathVariable("id") Long goodId) {
-        Goods goodsFromDb = goodsRepository.findById(goodId).orElseThrow();
-        goodsRepository.delete(goodsFromDb);
-        String delete = "Goods with ID = " + goodId + " deleted";
-        return new ResponseEntity<>(delete, HttpStatus.OK);
+        return new ResponseEntity<>(goodsService.deleteGoods(goodId), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Create Good")
@@ -107,8 +102,6 @@ public class GoodsController {
     })
     @PostMapping("/createGoods")
     public ResponseEntity<Goods> create(@RequestBody GoodsRequest request) {
-        Goods goods = new Goods();
-        goods.setGoodName(request.getGoodName());
-        return new ResponseEntity<>(goodsRepository.save(goods), HttpStatus.CREATED);
+        return new ResponseEntity<>((goodsService.create(request)), HttpStatus.CREATED);
     }
 }

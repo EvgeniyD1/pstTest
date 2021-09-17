@@ -10,15 +10,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import psttest.demo.dao.MessageRepository;
 import psttest.demo.dao.UserRepository;
 import psttest.demo.domain.Message;
-import psttest.demo.domain.User;
+import psttest.demo.service.MessageService;
 
 import java.util.List;
 
@@ -26,11 +24,11 @@ import java.util.List;
 @RequestMapping("/message")
 public class MessageController {
 
-    private final MessageRepository messageRepository;
+    private final MessageService messageService;
     private final UserRepository userRepository;
 
-    public MessageController(MessageRepository messageRepository, UserRepository userRepository) {
-        this.messageRepository = messageRepository;
+    public MessageController(MessageService messageService, UserRepository userRepository) {
+        this.messageService = messageService;
         this.userRepository = userRepository;
     }
 
@@ -41,28 +39,30 @@ public class MessageController {
     })
     @GetMapping
     public ResponseEntity<List<Message>> findAll() {
-        List<Message> messages = messageRepository.findAll();
+        List<Message> messages = messageService.findAll();
         return new ResponseEntity<>(messages, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Create Message")
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "Successful creation message"),
-            @ApiResponse(code = 500, message = "Server error, something wrong")
-    })
-    /*костыль пока что*/
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "id", value = "User database id", example = "1", required = true,
-                    dataType = "long", paramType = "path")
-    })
-    @PostMapping("/createMessage/{id}")
-    public ResponseEntity<Message> create(@PathVariable("id") Long userId, @RequestBody MessageRequest request) {
-        Message message = new Message();
-        message.setText(request.getText());
-        User user = userRepository.findById(userId).orElseThrow();
-        message.setUser(user);
-        return new ResponseEntity<>(messageRepository.save(message), HttpStatus.CREATED);
-    }
+
+    ////////////////////////////////////////////////////////
+//    @ApiOperation(value = "Create Message")
+//    @ApiResponses({
+//            @ApiResponse(code = 201, message = "Successful creation message"),
+//            @ApiResponse(code = 500, message = "Server error, something wrong")
+//    })
+//    /*костыль пока что*/
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "id", value = "User database id", example = "1", required = true,
+//                    dataType = "long", paramType = "path")
+//    })
+//    @PostMapping("/createMessage/{id}")
+//    public ResponseEntity<Message> create(@PathVariable("id") Long userId, @RequestBody MessageRequest request) {
+//        Message message = new Message();
+//        message.setText(request.getText());
+//        User user = userRepository.findById(userId).orElseThrow();
+//        message.setUser(user);
+//        return new ResponseEntity<>(messageRepository.save(message), HttpStatus.CREATED);
+//    }
 
     @ApiOperation(value = "Update message")
     @ApiResponses({
@@ -75,10 +75,8 @@ public class MessageController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<Message> updateMessage(@PathVariable("id") Long messageId,
-                                           @RequestBody MessageRequest request) {
-        Message messageFromDb = messageRepository.findById(messageId).orElseThrow();
-        messageFromDb.setText(request.getText());
-        return new ResponseEntity<>(messageRepository.save(messageFromDb), HttpStatus.OK);
+                                                 @RequestBody MessageRequest request) {
+        return new ResponseEntity<>(messageService.updateMessage(messageId, request), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Delete Message")
@@ -92,10 +90,6 @@ public class MessageController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteMessage(@PathVariable("id") Long messageId) {
-        Message messageFromDb = messageRepository.findById(messageId).orElseThrow();
-        messageRepository.delete(messageFromDb);
-
-        String delete = "Message with ID = " + messageId + " deleted";
-        return new ResponseEntity<>(delete, HttpStatus.OK);
+        return new ResponseEntity<>(messageService.deleteMessage(messageId), HttpStatus.OK);
     }
 }

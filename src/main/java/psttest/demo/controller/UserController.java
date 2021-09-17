@@ -19,24 +19,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import psttest.demo.dao.GoodsRepository;
-import psttest.demo.dao.UserRepository;
 import psttest.demo.domain.Goods;
-import psttest.demo.domain.Role;
 import psttest.demo.domain.User;
+import psttest.demo.service.UserService;
 import springfox.documentation.annotations.ApiIgnore;
-
-import java.util.Collections;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
+
     private final GoodsRepository goodsRepository;
 
-    public UserController(UserRepository userRepository, GoodsRepository goodsRepository) {
-        this.userRepository = userRepository;
+    public UserController(UserService userService, GoodsRepository goodsRepository) {
+        this.userService = userService;
         this.goodsRepository = goodsRepository;
     }
 
@@ -55,7 +52,7 @@ public class UserController {
     })
     @GetMapping
     public ResponseEntity<Page<User>> findAll(@ApiIgnore Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
+        Page<User> users = userService.findAll(pageable);
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
@@ -65,13 +62,12 @@ public class UserController {
             @ApiResponse(code = 500, message = "Server error, something wrong")
     })
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "username", value = "Search query - username", example = "ED",
+            @ApiImplicitParam(name = "username", value = "Search query - username", example = "Ivan",
                     required = true, dataType = "string", paramType = "query")
     })
     @GetMapping("/searchByUsername")
     public ResponseEntity<User> findByUsername(@RequestParam("username") String query) {
-        Optional<User> byUsername = userRepository.findByUsername(query);
-        User user = byUsername.orElseThrow();
+        User user = userService.findByUsername(query).orElseThrow();
         return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
@@ -87,10 +83,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable("id") Long userId,
                                            @RequestBody UserRequest request) {
-        User userFromDb = userRepository.findById(userId).orElseThrow();
-        userFromDb.setUsername(request.getUsername());
-        userFromDb.setEmail(request.getEmail());
-        return new ResponseEntity<>(userRepository.save(userFromDb), HttpStatus.OK);
+        return new ResponseEntity<>(userService.updateUser(userId, request), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Delete user")
@@ -104,10 +97,7 @@ public class UserController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable("id") Long userId) {
-        User userFromDb = userRepository.findById(userId).orElseThrow();
-        userRepository.delete(userFromDb);
-        String delete = "User with ID = " + userId + " deleted";
-        return new ResponseEntity<>(delete, HttpStatus.OK);
+        return new ResponseEntity<>(userService.deleteUser(userId), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Create user")
@@ -117,13 +107,10 @@ public class UserController {
     })
     @PostMapping("/registration")
     public ResponseEntity<User> create(@RequestBody UserRequest request) {
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setRoles(Collections.singleton(Role.USER));
-        return new ResponseEntity<>(userRepository.save(user), HttpStatus.CREATED);
+        return new ResponseEntity<>(userService.create(request), HttpStatus.CREATED);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////
     @ApiOperation(value = "Add goods in basket")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Successful adding goods in basket"),
@@ -133,8 +120,8 @@ public class UserController {
     public ResponseEntity<User> byeGoods(@PathVariable("id") Long userId,
                                          @RequestBody GoodsRequest request) {
         Goods goods = goodsRepository.findByGoodName(request.getGoodName()).orElseThrow();
-        userRepository.byeGoods(userId, goods.getId());
-        User userFromDb = userRepository.findById(userId).orElseThrow();
+        userService.byeGoods(userId, goods.getId());
+        User userFromDb = userService.findById(userId).orElseThrow();
         return new ResponseEntity<>(userFromDb, HttpStatus.OK);
     }
 
@@ -147,8 +134,9 @@ public class UserController {
     public ResponseEntity<User> removeGoods(@PathVariable("id") Long userId,
                                             @RequestBody GoodsRequest request) {
         Goods goods = goodsRepository.findByGoodName(request.getGoodName()).orElseThrow();
-        userRepository.removeGoods(userId, goods.getId());
-        User userFromDb = userRepository.findById(userId).orElseThrow();
+        userService.removeGoods(userId, goods.getId());
+        User userFromDb = userService.findById(userId).orElseThrow();
         return new ResponseEntity<>(userFromDb, HttpStatus.OK);
     }
+
 }
