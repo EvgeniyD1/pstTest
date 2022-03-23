@@ -1,8 +1,10 @@
 package psttest.demo.service;
 
+import org.springframework.aop.framework.AopContext;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.Optional;
 
 @Service
 @CacheConfig(cacheNames = {"goods"})
+@EnableAspectJAutoProxy(exposeProxy = true)//используется для вызова текущего прокси
 public class GoodsService {
 
     private final GoodsRepository goodsRepository;
@@ -53,16 +56,20 @@ public class GoodsService {
     @CacheEvict(value = "goods", allEntries = true)
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.DEFAULT, propagation = Propagation.REQUIRED)
     public Goods updateGoods(Long goodsId, GoodsRequest request){
-        Goods goodsFromDb = findById(goodsId).orElseThrow();
+//        Goods goodsFromDb = findById(goodsId).orElseThrow();
+        Goods goodsFromDb = ((GoodsService) AopContext.currentProxy()).findById(goodsId).orElseThrow();
         goodsFromDb.setGoodName(request.getGoodName());
-        return save(goodsFromDb);
+//        return save(goodsFromDb);
+        return ((GoodsService) AopContext.currentProxy()).save(goodsFromDb);
     }
 
     @CacheEvict(value = "goods", allEntries = true)
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.DEFAULT, propagation = Propagation.REQUIRED)
     public String deleteGoods(Long goodId){
-        Goods goodsFromDb = findById(goodId).orElseThrow();
-        delete(goodsFromDb);
+//        Goods goodsFromDb = findById(goodId).orElseThrow();
+        Goods goodsFromDb = ((GoodsService) AopContext.currentProxy()).findById(goodId).orElseThrow();
+//        delete(goodsFromDb);
+        ((GoodsService) AopContext.currentProxy()).delete(goodsFromDb);
         return "Goods with ID = " + goodId + " deleted";
     }
 
@@ -71,6 +78,7 @@ public class GoodsService {
     public Goods create(GoodsRequest request){
         Goods goods = new Goods();
         goods.setGoodName(request.getGoodName());
-        return save(goods);
+//        return save(goods);
+        return ((GoodsService) AopContext.currentProxy()).save(goods);
     }
 }

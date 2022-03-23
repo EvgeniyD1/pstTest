@@ -62,6 +62,7 @@ public class GoodsController {
             @ApiImplicitParam(name = "name", value = "Search query - goodName", example = "cola",
                     required = true, dataType = "string", paramType = "query")
     })
+//    @GetMapping("/searchByGoodsName")
     @GetMapping("/searchByGoodsName")
     public ResponseEntity<Goods> findByName(@RequestParam("name") String query) {
         Goods goods = goodsService.findByGoodName(query).orElseThrow();
